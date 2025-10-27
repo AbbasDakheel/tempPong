@@ -23,7 +23,6 @@ interface GameState {
 const SERVER_GAME_WIDTH = 800;
 const SERVER_GAME_HEIGHT = 600;
 const app = document.getElementById('app');
-let isRoomEmpty = true;
 
 const	views = {
 	firstPage: `
@@ -95,6 +94,7 @@ const	views = {
             <div id="ball" class="ball"></div>
             <div id="left-score" class="score">0</div>
             <div id="right-score" class="score">0</div>
+			<p id="winner-message" class="winner-message-style" style="display: none;"></p>
 		</main>
 		<button id="back-to-lobby-btn" class="back-button"> Back to main page</button>
 	</div>
@@ -114,34 +114,6 @@ const	views = {
 	`
 };
 
-
-	// <div class="game-view-container">
-	// 	<div id="gamePageHeader" class="gamePageH">
-	// 		<p class="placeHolder"></p>
-	// 		<p id="aliesLeftPlayerId" class="aliesMessage"> Player 1</p>
-	// 		<button id="playBtn" class="gamePageHeaderBtn"> Play </button>
-	// 		<button id="pauseBtn" class="gamePageHeaderBtn"> Pause </button>
-	// 		<p id="aliesRightPlayerId" class="aliesMessage"> player 2</p>
-	// 		<p class="placeHolder"></p>
-	// 	</div>
-	// 	<main class="game-aria">
-	// 		<div class="leftSide">
-	// 			<div id="left-goal" class="goal"></div>
-	// 			<div id="left-paddle" class="side-line"></div>
-	// 			<div id="left-score" class="score" aria-live="polite">0</div>
-	// 		</div>
-	// 		<div class="center">
-	// 			<div id="ball" class="ball"></div>
-	// 			<div class="vertical-dash-line"></div>
-	// 		</div>
-	// 		<div class="rightSide">
-	// 			<div id="right-score" class="score" aria-live="polite">0</div>
-	// 			<div id="right-paddle" class="side-line"></div>
-	// 			<div id="right-goal" class="goal"></div>
-	// 		</div>
-	// 	</main>
-	// 	<button id="back-to-lobby-btn" class="back-button"> Back to main page</button>
-	// </div>
 
 type ViewName = keyof typeof views;
 
@@ -166,7 +138,6 @@ if (window.location.hostname === 'localhost') {
     WS_URL = `wss://${window.location.hostname}/ws`;
     // Use 'wss://' (secure) because ngrok URLs are https.
 }
-//const WS_URL = `ws://${window.location.host.replace(':8080', ':3000')}/ws`;
 let reconnectDelay = 1000;
 function connectWebSocket() {
 	// Use wss:// for secure connections in production
@@ -196,6 +167,9 @@ function connectWebSocket() {
 					console.log("Match found! Starting game ");
 					render('gamePage');
 				}
+				break;
+			case 'gameOver':
+				showMessage(data.payload);
 				break;
 
 		}
@@ -227,8 +201,6 @@ function render(viewName : ViewName) {
     // Set the HTML content of our stage
     app.innerHTML = views[viewName];
 
-    // IMPORTANT: After changing the HTML, we must re-attach our event listeners
-    // to the new elements that were just created.
     if (viewName === 'firstPage') {
         attachMainPageListeners();
     } else if (viewName === 'gamePage') {
@@ -316,6 +288,7 @@ function attachGameTypeListeners() {
 
     if (playWithPersonBtn) {
         playWithPersonBtn.addEventListener('click', () => {
+			console.log("send a play request!!");
 			const	message = {type : 'find match'};
 			ws.send(JSON.stringify(message));
             // Here you would check if the room is empty
@@ -477,9 +450,10 @@ function	modalFormHandlar(event: Event){
 
 function attachGameListeners() {
     console.log("Attaching Game Listeners...");
-    const backBtn = document.getElementById('back-to-lobby-btn');
+    const	backBtn = document.getElementById('back-to-lobby-btn');
 	const	startPlayBtn = document.getElementById('playBtn') as HTMLButtonElement | null;
 	const	pausePlayBtn =document.getElementById('pauseBtn') as HTMLButtonElement | null;
+	
 
 
 
@@ -593,44 +567,24 @@ function	renderGameState(gameState : GameState){
 	updateScore(gameState.score.p1, gameState.score.p2);
 }
 
+const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+async function	showMessage(winner : string){
+	const	winnerMessage = document.getElementById('winner-message') as HTMLElement | null;
+	if (winnerMessage) {
+		winnerMessage.textContent = `${winner} Wins!`;
+		winnerMessage.style.display = 'block';
+	}
+	await sleep(5000);
+
+	render('firstPage');
+}
+
 
 render('firstPage');
 connectWebSocket();
 
 
 
-
-
-
-
-// 	// modal show subscribe login
-// 	const	modalOverlay = document.getElementById('modal-overlay') as HTMLElement | null;
-// 	const	modalTitle = document.getElementById('modal-title') as HTMLElement | null;
-// 	const	modalForm = document.getElementById('modal-form') as HTMLElement | null;
-// 	const	userNameInput = document.getElementById('username') as HTMLInputElement | null;
-// 	const	passwordInput = document.getElementById('password') as HTMLInputElement | null;
-// 	const	passwordError = document.getElementById('password-error');
-// 	const	confirmPasswordInput = document.getElementById('confirm-password') as HTMLInputElement | null;
-// 	const	confirmPassword = document.getElementById('confirm-password-group') as HTMLElement | null;
-// 	const	submitBtn = document.getElementById('modal-submit-btn') as HTMLElement | null;
-// 	const	closeBtn = document.querySelector('.close-btn') as HTMLElement | null;
-
-	
-	
-// 	// modal show add player
-// 	const	submitAddPlayer = document.getElementById('modal-submit-addPlayer-btn') as HTMLElement | null;
-// 	const	tournamentPlayersAmountError = document.getElementById('tournament-players-error') as HTMLElement | null;
-// 	const	tournamentButton = document.getElementById('tournament-btn') as HTMLElement | null;
-// 	const	modalAddPlayer = document.getElementById('modal-addPlayer-id') as HTMLDialogElement | null;
-// 	const	modalFormAddPlayer = document.getElementById('modal-form-addPlayer') as HTMLElement | null;
-// 	const	aliesInput = document.getElementById('alies') as HTMLInputElement | null;
-// 	const	addButton = document.getElementById('add-btn') as HTMLElement | null;
-// 	const	closeAddPlayerBtn = document.querySelector('.close-addPlayer-btn') as HTMLButtonElement | null;
-
-// 	// game elements
-
-// 	const	registBtn = document.querySelector('#register-btn') as HTMLElement | null;
-// 	const	logBtn = document.querySelector('#log-btn') as HTMLElement | null;
-
-// 	const	leftPlayerName = document.getElementById('aliesLeftPlayerId') as HTMLElement | null;
-// 	const	rightPlayerName = document.getElementById('aliesRightPlayerId') as HTMLElement | null;

@@ -62,6 +62,10 @@ function	playANDpause(body){
 
 function	gameLoop(){
 	if (!isPlaying || gameOver){
+		if (gameOver) {
+			sendWinnerMessage();
+			exitChildProcess();
+		}
 		return;
 	}
 	// 1. Update ball position based on its velocity (physics)
@@ -137,6 +141,11 @@ function	collisionCheck() {
 		ballx = paddleLeftX + 10;
 		// ballHasHitPaddle();
 	}
+
+	if (ballRightEdge > paddleRightX && ((ballBottomEdge > paddleRightY && ballTopEdge < paddleRightY + PADDLE_HEIGHT) || (ballTopEdge < paddleRightY + PADDLE_HEIGHT && ballBottomEdge > paddleRightY + PADDLE_HEIGHT) || (ballTopEdge > paddleRightY && ballBottomEdge < paddleRightY + PADDLE_HEIGHT))) {
+		ballVelocityX *= -1;
+		ballx = paddleRightX - 10;
+	}
     
     // Check collision with right paddle (player 2)
     // if (ballx >= GAME_WIDTH - PADDLE_WIDTH - BALL_SIZE && bally > ( paddleRightY - (PADDLE_HEIGHT / 2)) && bally < (paddleRightY + (PADDLE_HEIGHT / 2))) {
@@ -144,11 +153,11 @@ function	collisionCheck() {
 	// 	ballVelocityX *= -1;
     // }
 
-	if (ballx >= paddleRightX && bally > ( paddleRightY - (PADDLE_HEIGHT / 2)) && bally < (paddleRightY + (PADDLE_HEIGHT / 2))) {
-		//console.log('right collision');
-		ballVelocityX *= -1;
-		// ballHasHitPaddle();
-	}
+	// if (ballx >= paddleRightX && bally > ( paddleRightY - (PADDLE_HEIGHT / 2)) && bally < (paddleRightY + (PADDLE_HEIGHT / 2))) {
+	// 	//console.log('right collision');
+	// 	ballVelocityX *= -1;
+	// 	// ballHasHitPaddle();
+	// }
 
     // Check for scoring
     // if (ballx < 0) { // Left wall
@@ -252,7 +261,6 @@ async function resetBall() {
 		if	(randomx > 0 && randomx < 2)
 			randomx = 2;
 		randomx *= changeDirection;
-		// randomx *= -1;
 
 		let	randomy = (Math.random() * 4);
 		if (randomy > 0 && randomy < 2)
@@ -262,8 +270,8 @@ async function resetBall() {
 		ballVelocityX = randomx;
 		ballVelocityY = randomy;
 
-		ballVelocityX = -2;
-		ballVelocityY = -2;
+		// ballVelocityX = -2;
+		// ballVelocityY = -2;
 
 		
 	}
@@ -338,12 +346,20 @@ function startGameWithDelay() {
         
         // Start the interval, which will now call gameLoop every ~16.7ms.
         const gameIntervalId = setInterval(gameLoop, 1000 / 60);
-		if (gameOver){
-			clearInterval(gameIntervalId);
-
-		}
+		
 
     }, 3000);
+}
+
+function	exitChildProcess(){
+	if (gameOver){
+		clearInterval(gameIntervalId);
+		console.log('match script game OVER !!!');
+		setTimeout(() => {
+			process.exit();
+		}, 100000);
+
+	}
 }
 
 startGameWithDelay();
@@ -380,6 +396,16 @@ process.on('message', (message) => {
 
 function	sendState(){
 	process.send({type: 'gameState', object:{ matchID, gameState}});
+}
+
+function	sendWinnerMessage(){
+	let	winner = "";
+	if (gameState.player1 > gameState.player2){
+		winner = "player1";
+	}else{
+		winner = "player2";
+	}
+	process.send({type: 'gameOver', object:{ matchID, gameState, winner}});
 }
 
 

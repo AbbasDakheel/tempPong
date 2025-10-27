@@ -180,8 +180,20 @@ function	findMatch(player, data){
 				}else if (message.type === 'gameOver'){
 					// add result to db
 					// delete players from matchlist
+					const	players = matchsList.get(id);
+					broadcastWinnerMessage(players, message.object.winner);
 				}
 			}
+		})
+		matchChild.on('exit', (code, signal) => {
+			childProcessMap.delete(MATCHID);
+			const players = matchsList.get(MATCHID)
+			players.p1.role = null;
+			players.p2.role = null;
+			console.log(`match list map BEFORE delete size is : ${matchsList.size} .`);
+			matchsList.delete(MATCHID);
+			console.log(`match list map AFTER delete size is : ${matchsList.size} .`);
+			
 		});
 
 
@@ -253,6 +265,16 @@ function broadcastGameState(player, gameState) {
 	if (player.p2.socket.readyState === 1) { // 1 means OPEN
 		player.p2.sendMessage("gameStateUpdate", gameState);
 		//match.p2.socket.send(gameState);
+	}
+}
+
+function	broadcastWinnerMessage(player, winner){
+	console.log("send game over to front end !!!")
+	if (player.p1.socket.readyState === 1) {
+		player.p1.sendMessage("gameOver", winner);
+	}
+	if (player.p2.socket.readyState === 1) {
+		player.p2.sendMessage("gameOver", winner);
 	}
 }
 
